@@ -104,6 +104,16 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
 .help details{background:#fff;border:2px solid #a9d3ea;border-radius:11px;margin-bottom:7px;padding:8px 10px}
 .help summary{cursor:pointer;font-weight:700;color:#123a5c;font-size:14.5px}
 .help details>div,.help details ol{font-size:13.5px;color:#2a3a45;margin-top:6px;line-height:1.6}.help details ol{padding-left:18px;margin-bottom:0}.help details ol li{margin-bottom:3px}
+.shortcuts{display:flex;flex-direction:column;gap:7px}
+.shortcut-label{font-size:11px;font-weight:800;color:#456;line-height:1.2}
+.shortcut-row{display:flex;flex-wrap:wrap;gap:5px}
+.shortcut{font-family:inherit;font-size:11.5px;font-weight:800;line-height:1.2;color:#123a5c;background:#eaf6ff;border:2px solid #8fc4e1;border-radius:7px;padding:4px 7px;cursor:pointer;box-shadow:0 1px 0 #6fa6c5}
+.shortcut:hover,.shortcut:focus{background:#d4edfb;border-color:#4e9ac7;transform:translateY(-1px)}
+.shortcut.phase{font-size:10.5px;color:#6b4900;background:#fff3d6;border-color:#e0b84a;padding:3px 6px;box-shadow:0 1px 0 #b98516}
+.shortcut.phase:hover,.shortcut.phase:focus{background:#ffe6a0;border-color:#bd8615}
+.panel[id],.card[id]{scroll-margin-top:14px}
+.jump-flash{animation:jumpFlash 1.15s ease}
+@keyframes jumpFlash{0%,100%{filter:none}30%{filter:brightness(1.16);box-shadow:0 0 0 4px #f6c945,0 8px 20px rgba(0,0,0,.18)}}
 #paso-previo{scroll-margin-top:14px}
 @media(min-width:1024px){.page{display:flex;gap:16px;justify-content:center;align-items:flex-start}.device{flex:1 1 auto;min-width:0;margin:0}.help{flex:0 0 274px;position:sticky;top:14px;margin-top:0;max-height:calc(100vh - 28px);overflow:auto}}
 </style></head><body>
@@ -137,7 +147,7 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
     <div class="small" style="margin-top:6px">Grupos huevo e imágenes vía PokéAPI. Ref: <a href="https://www.pokexperto.net/index2.php?seccion=mecanica/gruposhuevo" target="_blank">pokexperto</a>.</div>
   </div>
 
-  <div class="panel"><div class="phead"><span class="pix">1 · INVENTARIO</span></div>
+  <div id="inventario" class="panel"><div class="phead"><span class="pix">1 · INVENTARIO</span></div>
     <div class="pdesc">🎣 Anota cuántos Pokémon con un solo IV perfecto ya tienes de cada estadística.</div>
     <div class="small" style="margin-bottom:8px">¿Cuántos <b>Pokemon con un IV al 31</b> tienes de cada estadística? Cuéntalos por género (♀/♂).</div>
     <div class="inv-grid" id="invgrid"></div></div>
@@ -147,19 +157,19 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
     <div class="small" style="margin-bottom:8px">Si capturaste un <b>ayudante</b> que ya trae 2 o más IVs al 31, agrégalo. <b>Puedes agregar varios</b> y los analiza todos.</div>
     <div id="caught"></div></div>
 
-  <div class="panel"><div class="phead"><span class="pix">2 · ROLES</span>
+  <div id="seccion-roles" class="panel"><div class="phead"><span class="pix">2 · ROLES</span>
       <label class="auto-toggle"><input type="checkbox" id="auto" checked> auto por abundancia
       <span class="info" title="Ordena tus IVs del que MÁS tienes al que menos y les reparte el papel. El más abundante va de BASE (se usa 16 veces). El más escaso a un slot de 1 uso. Así gastas menos. Desactívalo para ordenar a mano.">ⓘ</span></label></div>
     <div id="rolesinfo"><div class="pdesc">⚙️ La app reparte los papeles sola para que gastes lo menos posible. No tienes que tocar nada.</div>
     <div class="small" style="margin-bottom:8px">Tu IV más abundante va de <b>base</b> (16 usos); el más escaso a un slot de 1 uso.</div></div>
     <div id="roles"></div></div>
 
-  <div class="panel"><div class="phead"><span class="pix">3 · COSTOS</span></div>
+  <div id="costos" class="panel"><div class="phead"><span class="pix">3 · COSTOS</span></div>
     <div class="pdesc">💰 Cuánto te costará todo en total (objetos + géneros forzados).</div>
     <div class="note">Cada objeto cuesta <b>$500 y se consumen</b> al igual que los <b> padres</b> en cada cruce. El género de una cría puede ser <b>al azar (No implica un costo)</b>, pero su pareja debe ser <b>forzada al género opuesto (+$500) para permitir la continuidad del cruce.</b>.</div>
     <div class="grid4" id="coststats"></div><div style="margin-top:8px" id="shoplist"></div></div>
 
-  <div class="panel"><div class="phead"><span class="pix">4 · PLAN DE CRÍA</span><button class="btn mini gray" id="resetprog" style="margin-left:auto">reiniciar</button></div>
+  <div id="plan-cria" class="panel"><div class="phead"><span class="pix">4 · PLAN DE CRÍA</span><button class="btn mini gray" id="resetprog" style="margin-left:auto">reiniciar</button></div>
     <div class="pdesc">📋 El paso a paso: qué cruzar, en qué orden, qué objeto equipar y qué género marcar. Usa <b>En proceso</b> mientras esperas que nazca la cría.</div>
     <div id="plan"></div></div>
   <div class="small" style="text-align:center;color:#fff">Hecho con cariño y amor por Jess_Ca_Ab.</div>
@@ -172,7 +182,7 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
   <details><summary>La especie</summary><div>La cría nace de la especie de la <b>madre</b>. Por eso tu objetivo <b>siempre debe ser hembra</b>.</div></details>
   <details><summary>¿Qué es un grupo huevo?</summary><div>Un <b>grupo huevo</b> reúne especies que son compatibles para criar entre sí. No tienen que ser de la misma especie: si comparten al menos un grupo huevo y son de géneros opuestos, pueden cruzarse.<br><br>Esto nos sirve porque puedes usar como <b>ayudante</b> cualquier Pokémon compatible que tenga el IV al 31 que necesitas. La cría seguirá siendo de la especie de la madre, es decir, de tu Pokémon objetivo.<br><br><b>Ditto</b> es un ayudante especial: puede criar con casi cualquier Pokémon, incluso con muchos que no tienen género.</div></details>
   <details><summary>Renombra tus pokemon según sus IVs</summary><div>Cuando críes un Pokémon, cámbiale el nombre según sus IVs (ej: uno con PS y S.Def llámalo <b>"Ps SDef"</b>). Así lo localizas facilmente en la caja.</div></details>
-  <details><summary>Paso a paso</summary><ol><li>Consigue tu <b>semilla hembra</b> (Paso previo).</li><li>Junta los <b>ayudantes 1×31</b> (Fase 0).</li><li>Arma los 2×31, luego 3×31… hasta el <b>6×31</b>.</li></ol></details>
+  <details><summary>Atajos</summary><div class="shortcuts"><div class="shortcut-label">Secciones principales</div><div class="shortcut-row"><button type="button" class="shortcut" data-jump="inventario">Inventario</button><button type="button" class="shortcut" data-jump="seccion-roles">Roles</button><button type="button" class="shortcut" data-jump="costos">Costos</button><button type="button" class="shortcut" data-jump="plan-cria">Plan de cría</button></div><div class="shortcut-label">Dentro del plan</div><div class="shortcut-row"><button type="button" class="shortcut phase" data-jump="paso-previo">Previo</button><button type="button" class="shortcut phase" data-jump="fase-0">Fase 0</button><button type="button" class="shortcut phase" data-jump="fase-1">Fase 1</button><button type="button" class="shortcut phase" data-jump="fase-2">Fase 2</button><button type="button" class="shortcut phase" data-jump="fase-3">Fase 3</button><button type="button" class="shortcut phase" data-jump="fase-4">Fase 4</button><button type="button" class="shortcut phase" data-jump="fase-5">Fase 5</button></div></div></details>
 </div></aside>
 </div>
 <script>
@@ -335,12 +345,12 @@ function renderSolverPlan(SOL){const inf=analyzeSolver(SOL);let dc=0;SOL.seq.for
 function renderPlan(){computeCover();const SOL=computeSolver();const pr=priority();currentPr=pr;if(SOL){document.getElementById('plan').innerHTML=renderSolverPlan(SOL);return;}computeGenderPlan();let dc=0,tc=0;walkA(TREE,n=>{if(!n.leaf&&!COVER[n.id]){tc++;if(N(n.id).done)dc++;}});const covered=Object.keys(COVER).length>0;let spineCovered=false;for(const id in COVER){if(NODES[id]&&NODES[id].onSpine){spineCovered=true;break;}}
  let big='<div class="bigpic">'+chainChip('32 ayudantes 1×31')+'<span class="ar">→</span>'+chainChip('2×31')+'<span class="ar">→</span>'+chainChip('3×31')+'<span class="ar">→</span>'+chainChip('4×31')+'<span class="ar">→</span>'+chainChip('5×31')+'<span class="ar">→</span>'+chainChip('6×31 <span style="font-size:14px;vertical-align:-1px">★</span>',true)+'</div>';
  if(covered)big='<div class="note" style="background:#1b5e35;border-color:#0f4022">✅ Usaste tus Pokémon ya conseguidos: te quedan <b>'+tc+' cruces</b> (de 31). Ocultamos los pasos que ya no necesitas.</div>';let howto='<div class="note"><b>Cómo se lee:</b> de arriba (simple) hacia abajo. Cada cruce junta 2 Pokémon (ambos se consumen + 2 objetos). La fila <span class="spinelabel" style="font-size:13px">★</span> es <b>tu especie hembra subiendo de nivel</b>.<br><br><b>Estados:</b> marca <b>En proceso</b> cuando el cruce ya esté en la guardería y aún no nazca la cría; quedará destacado en amarillo. Al finalizarlo, esa marca se quita y el cruce se minimiza.<br><br><b>Géneros:</b> los cruces ★ fuerzan la cría hembra. En cada pareja de ayudantes, una cría la dejas <b>al azar</b> (gratis) y la app <b>fija la otra al opuesto y forzada (+$500)</b>.</div><div class="small" style="color:#fff">Progreso: '+dc+'/'+tc+' cruces</div><div class="progbar"><div style="width:'+(tc?Math.round(dc/tc*100):0)+'%"></div></div>';
- let f0='<div class="card"><div class="sectitle">FASE 0 · JUNTA LOS AYUDANTES 1×31</div><div class="phase-intro">Consigue estos Pokémon con 1 IV al 31. Los <b>géneros ya vienen calculados según tu inventario</b> para aprovechar lo que ya tienes.</div>';
+ let f0='<div id="fase-0" class="card"><div class="sectitle">FASE 0 · JUNTA LOS AYUDANTES 1×31</div><div class="phase-intro">Consigue estos Pokémon con 1 IV al 31. Los <b>géneros ya vienen calculados según tu inventario</b> para aprovechar lo que ya tienes.</div>';
  Object.keys(GDEMAND).map(Number).sort((a,b)=>a-b).forEach(r=>{const stt=BY_KEY[pr[r]],d=GDEMAND[r],t=d.f+d.m,key='L'+r,done=S.leaf[key]||0,hF=S.inv[stt.key].f,hM=S.inv[stt.key].m;const needTxt=(d.f?'<span class="gt gtf">♀</span>'+d.f+' ':'')+(d.m?'<span class="gt gtm">♂</span>'+d.m:'');const sF=Math.max(0,d.f-hF),sM=Math.max(0,d.m-hM),sh=(sF||sM);const shT=(sF?sF+'♀ ':'')+(sM?sM+'♂':'');f0+='<div class="row-line"><img class="ico lg" src="'+ICONS[stt.key]+'">'+rchip(r,pr)+'<span class="small" style="color:#345;flex:1">'+(sh?'<b style="color:#c0392b">Faltan '+shT+'</b>':'<b style="color:#1b7a2e">✓ Ya tienes suficientes</b>')+' — junta '+needTxt+(r===0?' <span style="color:#8a6d00">(1 es tu semilla ♀)</span>':'')+'; tienes '+hF+'♀ '+hM+'♂.</span></div>';});
  f0+='</div>';if(!Object.keys(GDEMAND).length)f0='';
  const levels={};walkA(TREE,n=>{if(!n.leaf&&!COVER[n.id])(levels[n.roles.length]=levels[n.roles.length]||[]).push(n);});
  const intro={2:'Junta 2 ayudantes de 1 IV (base + otro) → un 2×31.',3:'Cruza dos 2×31 con el IV base en común → un 3×31.',4:'Cruza dos 3×31 → un 4×31.',5:'Cruza dos 4×31 → un 5×31.',6:'Último cruce: dos 5×31 → tu 6×31.'};
- let fases='',gi=0;[2,3,4,5,6].forEach((lv,idx)=>{const nodes=levels[lv]||[];if(!nodes.length)return;nodes.sort((a,b)=>(a.onSpine?-1:0)-(b.onSpine?-1:0));fases+='<div class="card"><div class="sectitle">FASE '+(idx+1)+' · CREA LOS '+lv+'×31 ('+nodes.length+' cruces)</div><div class="phase-intro">'+intro[lv]+'</div>';nodes.forEach(n=>{gi++;fases+=crossCard(n,pr,gi);});fases+='</div>';});
+ let fases='',gi=0;[2,3,4,5,6].forEach((lv,idx)=>{const nodes=levels[lv]||[];if(!nodes.length)return;nodes.sort((a,b)=>(a.onSpine?-1:0)-(b.onSpine?-1:0));fases+='<div id="fase-'+(idx+1)+'" class="card"><div class="sectitle">FASE '+(idx+1)+' · CREA LOS '+lv+'×31 ('+nodes.length+' cruces)</div><div class="phase-intro">'+intro[lv]+'</div>';nodes.forEach(n=>{gi++;fases+=crossCard(n,pr,gi);});fases+='</div>';});
  document.getElementById('plan').innerHTML=big+howto+(spineCovered?'':prepSection(pr))+f0+fases;}
 
 function setSprite(kind,url){const id=kind==='T'?'tsprite':'dsprite',el=document.getElementById(id);el.outerHTML=url?'<img id="'+id+'" class="mon" src="'+url+'">':'<span id="'+id+'" class="mon ph">?</span>';}
@@ -348,7 +358,7 @@ function renderAll(){NODES={};TREE=buildCross([0,1,2,3,4,5],'F',true,'R');TREE.g
 
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset.inv){S.inv[t.dataset.inv][t.dataset.invg]=Math.max(0,parseInt(t.value)||0);save();renderRoles();renderCaught();renderCost();renderPlan();}if(t.id==='donor'){S.donor=t.value;save();clearTimeout(dT);dT=setTimeout(()=>fetchSprite(t.value.trim().toLowerCase(),'D'),400);}});
 document.addEventListener('change',e=>{if(e.target.id==='auto'){S.auto=e.target.checked;save();renderAll();}if(e.target.dataset&&e.target.dataset.inv){S.inv[e.target.dataset.inv][e.target.dataset.invg]=Math.max(0,parseInt(e.target.value)||0);save();renderRoles();renderCaught();renderCost();renderPlan();}});
-document.addEventListener('click',e=>{const t=e.target.closest('button')||e.target;
+document.addEventListener('click',e=>{const jump=e.target.closest('[data-jump]');if(jump){e.preventDefault();const target=document.getElementById(jump.dataset.jump)||document.getElementById('plan-cria');if(target){if(target.tagName==='DETAILS')target.open=true;target.scrollIntoView({behavior:'smooth',block:'start'});target.classList.remove('jump-flash');void target.offsetWidth;target.classList.add('jump-flash');setTimeout(()=>target.classList.remove('jump-flash'),1200);}return;}const t=e.target.closest('button')||e.target;
  if(t.dataset.move!==undefined){const i=+t.dataset.move,dir=+t.dataset.dir,o=priority().slice(),j=i+dir;if(j>=0&&j<o.length){[o[i],o[j]]=[o[j],o[i]];S.order=o;S.auto=false;save();renderAll();}}
  if(t.dataset.cnt){const k=t.dataset.cnt,d=+t.dataset.d,mx=+t.dataset.max||999;let v=(S.leaf[k]||0)+d;v=Math.max(0,Math.min(mx,v));S.leaf[k]=v;save();renderPlan();}
  if(t.dataset.roll){const id=t.dataset.node,cur=N(id).roll;setN(id,{roll:cur===t.dataset.roll?null:t.dataset.roll});renderCost();renderPlan();}

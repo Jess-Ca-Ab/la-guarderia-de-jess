@@ -100,7 +100,15 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
 .donor-list{max-height:170px;overflow:auto;background:#fff;border:2px solid #cfe3f0;border-radius:8px;padding:6px}
 .donor{display:inline-flex;align-items:center;gap:5px;background:var(--row2);border:2px solid #a9d3ea;border-radius:6px;padding:4px 9px;margin:3px;font-size:13px;cursor:pointer}
 .donor:hover{background:#bfe3f5}.donor.pin{background:#fff2c2;border-color:#e0b84a}
-.specbox{display:flex;align-items:center;gap:8px;background:var(--row);border:2px solid #a9d3ea;border-radius:8px;padding:6px}
+.specbox{display:flex;align-items:center;gap:8px;background:var(--row);border:2px solid #a9d3ea;border-radius:8px;padding:6px;transition:border-color .18s,background .18s,box-shadow .18s}
+.specbox.compat-good{border-color:#39a85a;background:#effbf2;box-shadow:0 0 0 2px rgba(57,168,90,.14)}
+.specbox.compat-bad{border-color:#dc3b35;background:#fff0ef;box-shadow:0 0 0 2px rgba(220,59,53,.17)}
+.specbox.compat-checking{border-color:#e0a817;background:#fff9e8}
+.compat-alert{display:none;margin-top:8px;padding:9px 11px;border:2px solid;border-radius:9px;font-size:13.5px;font-weight:700;line-height:1.4}
+.compat-alert.good{display:block;color:#176b32;background:#effbf2;border-color:#66be7b}
+.compat-alert.bad{display:block;color:#9e201b;background:#fff0ef;border-color:#e36b65}
+.compat-alert.checking{display:block;color:#745600;background:#fff9e8;border-color:#e2b93f}
+.compat-plan{margin-top:8px!important}
 .help{margin-top:13px;background:var(--red);border:6px solid var(--red-d);border-radius:22px;padding:10px;box-shadow:0 0 0 3px var(--red-l) inset,0 14px 30px rgba(0,0,0,.35)}
 .help-inner{background:var(--blue);border:3px solid var(--blue-d);border-radius:16px;padding:10px;box-shadow:0 0 0 2px #7cc0e8 inset}
 .helphead{background:linear-gradient(#e85850,#c22a23);border:2px solid #9c241d;border-radius:10px;color:#fff;padding:9px;text-align:center;font-size:11px;margin-bottom:9px;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
@@ -154,9 +162,10 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
     <div class="pdesc">🎯 Elige qué Pokémon quieres perfecto y con cuál lo vas a cruzar.</div>
     <div class="note">La <b>hembra</b> define la especie, por lo que tu objetivo va <b>siempre hembra</b>. El macho ayudante puede ser cualquiera de su <b>grupo huevo</b> (o un <b>Ditto</b>, universal).</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><div class="small">Objetivo (hembra)</div><div class="specbox"><span id="tsprite" class="mon ph">?</span><input id="target" list="specieslist" placeholder="ej: gible" autocomplete="off"></div></div>
-      <div><div class="small">Ayudante (macho)</div><div class="specbox"><span id="dsprite" class="mon ph">?</span><input id="donor" list="specieslist" placeholder="ej: ditto" autocomplete="off"></div></div>
+      <div><div class="small">Objetivo (hembra)</div><div id="targetfield" class="specbox"><span id="tsprite" class="mon ph">?</span><input id="target" list="specieslist" placeholder="ej: gible" autocomplete="off"></div></div>
+      <div><div class="small">Ayudante (macho)</div><div id="donorfield" class="specbox"><span id="dsprite" class="mon ph">?</span><input id="donor" list="specieslist" placeholder="ej: ditto" autocomplete="off"></div></div>
     </div><datalist id="specieslist"></datalist>
+    <div id="compatout" class="compat-alert" aria-live="polite"></div>
     <div id="eggout" style="margin-top:8px"></div>
     <div class="small" style="margin-top:6px">Grupos huevo e imágenes vía PokéAPI. Ref: <a href="https://www.pokexperto.net/index2.php?seccion=mecanica/gruposhuevo" target="_blank">pokexperto</a>.</div>
   </div>
@@ -390,7 +399,7 @@ function solverCross(s,idx,inf){const id='SOL'+idx,st=N(id),done=!!st.done;
 function renderSolverPlan(SOL){const inf=analyzeSolver(SOL);let dc=0;SOL.seq.forEach((s,i)=>{if(N('SOL'+(i+1)).done)dc++;});
  let h='<div class="note" style="background:#1b5e35;border-color:#0f4022">✨ <b>Solución óptima con tus piezas.</b> Combinando lo que ya tienes sacas el 6×31 en solo <b>'+SOL.crosses+' cruces</b>, sin capturar nada más. Sigue los cruces en orden; la fila ★ es tu especie objetivo ♀. Los Pokémon de 1 IV que aparezcan como padres son de tu inventario (o captúralos).</div><div class="small" style="color:#fff">Progreso: '+dc+'/'+SOL.crosses+' cruces</div><div class="progbar"><div style="width:'+(SOL.crosses?Math.round(dc/SOL.crosses*100):0)+'%"></div></div>';
  SOL.seq.forEach((s,i)=>{h+=solverCross(s,i+1,inf[i]||{kind:'rand',need:'M'});});return h;}
-function renderPlan(){computeCover();const SOL=computeSolver();const pr=priority(),seedRole=seedReady()?pr.indexOf(S.seedIV):0;currentPr=pr;if(S.seedMode==='have'&&!seedReady()&&!hasTargetPiece()){document.getElementById('plan').innerHTML=prepSection(pr);return;}if(SOL){document.getElementById('plan').innerHTML=renderSolverPlan(SOL);return;}computeGenderPlan();let dc=0,tc=0;walkA(TREE,n=>{if(!n.leaf&&!COVER[n.id]){tc++;if(N(n.id).done)dc++;}});const covered=Object.keys(COVER).length>0;let spineCovered=false;for(const id in COVER){if(NODES[id]&&NODES[id].onSpine){spineCovered=true;break;}}
+function renderPlan(){const planEl=document.getElementById('plan');if(compatibilityBlocksPlan()){const checking=compatState==='checking';planEl.innerHTML='<div class="note compat-plan" style="background:'+(checking?'#fff8df':'#fff0ef')+';border-color:'+(checking?'#e0b84a':'#dc3b35')+';color:'+(checking?'#6b5000':'#8f211d')+'">'+(checking?'🔎 Comprobando si estas especies pueden criar…':'❌ Corrige el ayudante incompatible arriba antes de generar el plan de cría.')+'</div>';return;}computeCover();const SOL=computeSolver();const pr=priority(),seedRole=seedReady()?pr.indexOf(S.seedIV):0;currentPr=pr;if(S.seedMode==='have'&&!seedReady()&&!hasTargetPiece()){document.getElementById('plan').innerHTML=prepSection(pr);return;}if(SOL){document.getElementById('plan').innerHTML=renderSolverPlan(SOL);return;}computeGenderPlan();let dc=0,tc=0;walkA(TREE,n=>{if(!n.leaf&&!COVER[n.id]){tc++;if(N(n.id).done)dc++;}});const covered=Object.keys(COVER).length>0;let spineCovered=false;for(const id in COVER){if(NODES[id]&&NODES[id].onSpine){spineCovered=true;break;}}
  let big='<div class="bigpic">'+chainChip('32 ayudantes 1×31')+'<span class="ar">→</span>'+chainChip('2×31')+'<span class="ar">→</span>'+chainChip('3×31')+'<span class="ar">→</span>'+chainChip('4×31')+'<span class="ar">→</span>'+chainChip('5×31')+'<span class="ar">→</span>'+chainChip('6×31 <span style="font-size:14px;vertical-align:-1px">★</span>',true)+'</div>';
  if(covered)big='<div class="note" style="background:#1b5e35;border-color:#0f4022">✅ Usaste tus Pokémon ya conseguidos: te quedan <b>'+tc+' cruces</b> (de 31). Ocultamos los pasos que ya no necesitas.</div>';let howto='<div class="note"><b>Cómo se lee:</b> de arriba (simple) hacia abajo. Cada cruce junta 2 Pokémon (ambos se consumen + 2 objetos). La fila <span class="spinelabel" style="font-size:13px">★</span> es <b>tu especie hembra subiendo de nivel</b>.<br><br><b>Estados:</b> marca <b>En proceso</b> cuando el cruce ya esté en la guardería y aún no nazca la cría; quedará destacado en amarillo. Al finalizarlo, esa marca se quita y el cruce se minimiza.<br><br><b>Géneros:</b> los cruces ★ fuerzan la cría hembra. En cada pareja de ayudantes, una cría la dejas <b>al azar</b> (gratis) y la app <b>fija la otra al opuesto y forzada (+$500)</b>.</div><div class="small" style="color:#fff">Progreso: '+dc+'/'+tc+' cruces</div><div class="progbar"><div style="width:'+(tc?Math.round(dc/tc*100):0)+'%"></div></div>';
  let f0='<div id="fase-0" class="card"><div class="sectitle">FASE 0 · JUNTA LOS AYUDANTES 1×31</div><div class="phase-intro">Consigue estos Pokémon con 1 IV al 31. Los <b>géneros ya vienen calculados según tu inventario</b> para aprovechar lo que ya tienes.</div>';
@@ -404,7 +413,7 @@ function renderPlan(){computeCover();const SOL=computeSolver();const pr=priority
 function setSprite(kind,url){const id=kind==='T'?'tsprite':'dsprite',el=document.getElementById(id);el.outerHTML=url?'<img id="'+id+'" class="mon" src="'+url+'">':'<span id="'+id+'" class="mon ph">?</span>';}
 function renderAll(){NODES={};const pr=priority(),seedRole=seedReady()?pr.indexOf(S.seedIV):0;TREE=buildCross([0,1,2,3,4,5],'F',true,'R',seedRole);TREE.gplan={k:'final'};indexNodes(TREE);assignG(TREE);renderInv();renderRoles();renderCaught();renderCost();renderPlan();document.getElementById('auto').checked=S.auto;document.getElementById('target').value=S.target||'';document.getElementById('donor').value=S.donor||'';setSprite('T',S.tsprite);setSprite('D',S.dsprite);}
 
-document.addEventListener('input',e=>{const t=e.target;if(t.dataset.inv){S.inv[t.dataset.inv][t.dataset.invg]=Math.max(0,parseInt(t.value)||0);save();renderRoles();renderCaught();renderCost();renderPlan();}if(t.id==='donor'){S.donor=t.value;save();clearTimeout(dT);dT=setTimeout(()=>fetchSprite(t.value.trim().toLowerCase(),'D'),400);}});
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.inv){S.inv[t.dataset.inv][t.dataset.invg]=Math.max(0,parseInt(t.value)||0);save();renderRoles();renderCaught();renderCost();renderPlan();}if(t.id==='donor'){S.donor=t.value;donorData=null;compatState=(S.target&&S.donor)?'checking':'idle';save();showCompatibility();renderPlan();clearTimeout(dT);dT=setTimeout(()=>fetchSprite(t.value.trim().toLowerCase(),'D'),400);}});
 document.addEventListener('change',e=>{if(e.target.id==='auto'){S.auto=e.target.checked;save();renderAll();}if(e.target.dataset&&e.target.dataset.inv){S.inv[e.target.dataset.inv][e.target.dataset.invg]=Math.max(0,parseInt(e.target.value)||0);save();renderRoles();renderCaught();renderCost();renderPlan();}});
 function changeSeed(mode,iv){const nextMode=mode||S.seedMode,nextIV=iv===undefined?S.seedIV:iv;if(nextMode===S.seedMode&&nextIV===S.seedIV)return true;const active=Object.values(S.n||{}).some(x=>x&&(x.done||x.inProgress||x.roll));if(active&&!confirm('Cambiar la semilla recalculará la ruta y reiniciará el progreso de los cruces. ¿Continuar?'))return false;S.seedMode=nextMode;S.seedIV=nextIV;S.n={};S.leaf={};_pk=null;_solK=null;save();renderAll();return true;}
 document.addEventListener('click',e=>{const jump=e.target.closest('[data-jump]');if(jump){e.preventDefault();const target=document.getElementById(jump.dataset.jump)||document.getElementById('plan-cria');if(target){if(target.tagName==='DETAILS')target.open=true;target.scrollIntoView({behavior:'smooth',block:'start'});target.classList.remove('jump-flash');void target.offsetWidth;target.classList.add('jump-flash');setTimeout(()=>target.classList.remove('jump-flash'),1200);}return;}const zoom=e.target.closest('[data-enlarge]');if(zoom){const box=document.createElement('div');box.className='iv-lightbox';const pic=document.createElement('img');pic.src=zoom.src;pic.alt=zoom.alt;box.appendChild(pic);document.body.appendChild(box);box.addEventListener('click',()=>box.remove());return;}const t=e.target.closest('button')||e.target;
@@ -425,18 +434,108 @@ document.addEventListener('click',e=>{const jump=e.target.closest('[data-jump]')
  if(t.id==='resetprog'){S.leaf={};S.n={};save();renderCost();renderPlan();}
  if(t.dataset.donor){document.getElementById('donor').value=t.dataset.donor;S.donor=t.dataset.donor;save();fetchSprite(t.dataset.donor,'D');}});
 
-const API='https://pokeapi.co/api/v2/';function pretty(s){return s.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+const API='https://pokeapi.co/api/v2/';
+function pretty(s){return s.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+function escText(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function normSpecies(s){return String(s||'').trim().toLowerCase();}
+const EGG_ES={monster:'Monstruo',water1:'Agua 1',bug:'Bicho',flying:'Volador',ground:'Campo',fairy:'Hada',plant:'Planta',humanshape:'Humanoide',water3:'Agua 3',mineral:'Mineral',indeterminate:'Amorfo',water2:'Agua 2',ditto:'Ditto',dragon:'Dragón','no-eggs':'Sin Huevos'};
+function eggName(g){return EGG_ES[g]||pretty(g);}
+let targetData=null,donorData=null,compatState=(S.target&&S.donor)?'checking':'idle',speciesReq={T:0,D:0};
+function speciesData(d,fallback){return{name:d.name||fallback,display:(d.names.find(n=>n.language.name==='es')||{}).name||pretty(d.name||fallback),groups:d.egg_groups.map(g=>g.name),genderRate:d.gender_rate,error:false};}
+function setCompatState(state,message){
+ compatState=state;
+ const out=document.getElementById('compatout'),tb=document.getElementById('targetfield'),db=document.getElementById('donorfield');
+ [tb,db].forEach(el=>{if(el)el.classList.remove('compat-good','compat-bad','compat-checking');});
+ if(out){out.className='compat-alert'+(state==='idle'?'':' '+state);out.innerHTML=message||'';}
+ if(state==='good'){tb&&tb.classList.add('compat-good');db&&db.classList.add('compat-good');}
+ if(state==='bad'){db&&db.classList.add('compat-bad');}
+ if(state==='checking'){db&&db.classList.add('compat-checking');}
+}
+function showCompatibility(){
+ const tn=normSpecies(S.target),dn=normSpecies(S.donor);
+ if(!tn||!dn){setCompatState('idle','');return;}
+ if(!targetData||!donorData||targetData.name!==tn||donorData.name!==dn){setCompatState('checking','🔎 Comprobando si <b>'+escText(S.target)+'</b> y <b>'+escText(S.donor)+'</b> pueden criar…');return;}
+ if(targetData.error){setCompatState('bad','❌ No encontré el Pokémon objetivo <b>'+escText(S.target)+'</b>. Elígelo de la lista usando su nombre en inglés.');return;}
+ if(donorData.error){setCompatState('bad','❌ No encontré al ayudante <b>'+escText(S.donor)+'</b>. Elígelo de la lista usando su nombre en inglés.');return;}
+ const target=targetData.display,donor=donorData.display;
+ if(targetData.groups.includes('no-eggs')){setCompatState('bad','❌ <b>'+escText(target)+'</b> pertenece al grupo Sin Huevos y no puede criar.');return;}
+ if(targetData.name==='ditto'){setCompatState('bad','❌ <b>Ditto</b> no puede ser la especie objetivo de esta ruta de crianza.');return;}
+ if(donorData.name==='ditto'){setCompatState('good','✅ <b>Ditto</b> es compatible con <b>'+escText(target)+'</b> y funciona como ayudante universal.');return;}
+ if(targetData.genderRate===-1||targetData.genderRate===0){
+  const why=targetData.genderRate===-1?'no tiene género':'solo puede ser macho';
+  setCompatState('bad','❌ <b>'+escText(target)+'</b> '+why+'. Para obtener crías de esa especie necesitas usar <b>Ditto</b> como ayudante.');
+  return;
+ }
+ if(donorData.groups.includes('no-eggs')){setCompatState('bad','❌ <b>'+escText(donor)+'</b> pertenece al grupo Sin Huevos y no puede criar.');return;}
+ if(donorData.genderRate===-1){setCompatState('bad','❌ <b>'+escText(donor)+'</b> no tiene género y no puede ocupar el papel de ayudante macho. Usa <b>Ditto</b> u otra especie compatible.');return;}
+ if(donorData.genderRate===8){setCompatState('bad','❌ <b>'+escText(donor)+'</b> solo puede ser hembra y no puede ocupar el papel de ayudante macho.');return;}
+ const shared=targetData.groups.filter(g=>donorData.groups.includes(g));
+ if(!shared.length){
+  setCompatState('bad','❌ <b>'+escText(donor)+'</b> no comparte ningún grupo huevo con <b>'+escText(target)+'</b>. No puedes usarlo como ayudante. Elige uno del grupo <b>'+targetData.groups.map(eggName).join(' o ')+'</b> o usa <b>Ditto</b>.');
+  return;
+ }
+ setCompatState('good','✅ <b>'+escText(target)+'</b> y <b>'+escText(donor)+'</b> son compatibles: comparten el grupo huevo <b>'+shared.map(eggName).join(' y ')+'</b>.');
+}
+function compatibilityBlocksPlan(){return !!(normSpecies(S.target)&&normSpecies(S.donor)&&compatState!=='good');}
 async function loadSpecies(){try{const r=await fetch(API+'pokemon-species?limit=1400');const d=await r.json();document.getElementById('specieslist').innerHTML=d.results.map(x=>'<option value="'+x.name+'">').join('');}catch(e){}}
-async function fetchSprite(name,kind){if(!name)return;try{const r=await fetch(API+'pokemon-species/'+name);if(!r.ok)return;const d=await r.json();const url=SPRITE(d.id);if(kind==='T')S.tsprite=url;else S.dsprite=url;save();setSprite(kind,url);renderPlan();}catch(e){}}
+async function fetchSprite(name,kind){
+ name=normSpecies(name);const req=++speciesReq[kind];
+ if(kind==='D'){donorData=null;if(!name){S.dsprite='';setSprite('D','');showCompatibility();renderPlan();return;}showCompatibility();renderPlan();}
+ if(!name)return;
+ try{
+  const r=await fetch(API+'pokemon-species/'+encodeURIComponent(name));
+  if(req!==speciesReq[kind])return;
+  if(!r.ok){
+   if(kind==='D'){donorData={name,error:true};S.dsprite='';setSprite('D','');showCompatibility();renderPlan();}
+   return;
+  }
+  const d=await r.json();if(req!==speciesReq[kind]||normSpecies(kind==='D'?S.donor:S.target)!==name)return;
+  const data=speciesData(d,name),url=SPRITE(d.id);
+  if(kind==='T'){targetData=data;S.tsprite=url;}else{donorData=data;S.dsprite=url;}
+  save();setSprite(kind,url);showCompatibility();renderPlan();
+ }catch(e){
+  if(req!==speciesReq[kind])return;
+  if(kind==='D'){donorData={name,error:true};S.dsprite='';setSprite('D','');showCompatibility();renderPlan();}
+ }
+}
 let eggT,dT;
-document.getElementById('target').addEventListener('input',e=>{S.target=e.target.value;save();clearTimeout(eggT);eggT=setTimeout(()=>lookupEgg(e.target.value.trim().toLowerCase()),400);});
-async function lookupEgg(name){const out=document.getElementById('eggout');if(!name){out.innerHTML='';return;}out.innerHTML='<div class="small">Buscando…</div>';
- try{const r=await fetch(API+'pokemon-species/'+name);if(!r.ok){out.innerHTML='<div class="small">No encontré "'+name+'" (usa el nombre en inglés).</div>';return;}const d=await r.json();const es=(d.names.find(n=>n.language.name==='es')||{}).name||pretty(name);S.tsprite=SPRITE(d.id);save();setSprite('T',S.tsprite);renderPlan();
-  const groups=d.egg_groups.map(g=>g.name);if(groups.includes('no-eggs')){out.innerHTML='<div class="note"><b>'+es+'</b> no puede criar (grupo Sin Huevos).</div>';return;}
-  let members=new Map();for(const g of groups){try{const gr=await fetch(API+'egg-group/'+g);const gd=await gr.json();gd.pokemon_species.forEach(p=>{const mm=p.url.match(/\/(\d+)\/?$/);members.set(p.name,mm?+mm[1]:99999);});}catch(e){}}members.delete(name);const list=[...members.entries()].sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+document.getElementById('target').addEventListener('input',e=>{
+ S.target=e.target.value;targetData=null;compatState=(S.target&&S.donor)?'checking':'idle';save();showCompatibility();renderPlan();clearTimeout(eggT);eggT=setTimeout(()=>lookupEgg(e.target.value.trim().toLowerCase()),400);
+});
+async function lookupEgg(name){
+ const out=document.getElementById('eggout');name=normSpecies(name);const req=++speciesReq.T;
+ if(!name){targetData=null;S.tsprite='';setSprite('T','');out.innerHTML='';showCompatibility();renderPlan();return;}
+ out.innerHTML='<div class="small">Buscando…</div>';
+ try{
+  const r=await fetch(API+'pokemon-species/'+encodeURIComponent(name));
+  if(req!==speciesReq.T||normSpecies(S.target)!==name)return;
+  if(!r.ok){targetData={name,error:true};S.tsprite='';setSprite('T','');out.innerHTML='<div class="small">No encontré "'+escText(name)+'" (usa el nombre en inglés).</div>';showCompatibility();renderPlan();return;}
+  const d=await r.json();if(req!==speciesReq.T||normSpecies(S.target)!==name)return;
+  targetData=speciesData(d,name);const es=targetData.display;S.tsprite=SPRITE(d.id);save();setSprite('T',S.tsprite);showCompatibility();renderPlan();
+  const groups=targetData.groups;
+  if(groups.includes('no-eggs')){out.innerHTML='<div class="note"><b>'+escText(es)+'</b> no puede criar (grupo Sin Huevos).</div>';return;}
+  if(targetData.name==='ditto'){out.innerHTML='<div class="note"><b>Ditto</b> no puede ser la especie objetivo de esta ruta.</div>';return;}
+  if(targetData.genderRate===-1||targetData.genderRate===0){
+   const why=targetData.genderRate===-1?'no tiene género':'solo puede ser macho';
+   out.innerHTML='<div class="egg-hi">🥚 <b>'+escText(es)+'</b> — grupo huevo: <b>'+groups.map(eggName).join(' + ')+'</b></div><div class="note" style="margin-top:7px"><b>'+escText(es)+'</b> '+why+', así que para obtener crías de esta especie debes usar <b>Ditto</b>.</div><div class="donor-list" style="margin-top:7px"><span class="donor pin" data-donor="ditto"><span style="font-size:16px">⭐</span> Ditto</span></div>';
+   return;
+  }
+  let members=new Map();
+  for(const g of groups){
+   try{
+    const gr=await fetch(API+'egg-group/'+g),gd=await gr.json();
+    if(req!==speciesReq.T||normSpecies(S.target)!==name)return;
+    gd.pokemon_species.forEach(p=>{const mm=p.url.match(/\/(\d+)\/?$/);members.set(p.name,mm?+mm[1]:99999);});
+   }catch(e){}
+  }
+  members.delete(name);const list=[...members.entries()].sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
   const chips=['<span class="donor pin" data-donor="ditto"><span style="font-size:16px">⭐</span> Ditto</span>'].concat(list.map(m=>'<span class="donor" data-donor="'+m+'">'+pretty(m)+'</span>'));
-  out.innerHTML='<div class="egg-hi">🥚 <b>'+es+'</b> — grupo huevo: <b>'+groups.map(pretty).join(' + ')+'</b></div><div class="small" style="margin:7px 0"><b>Cualquiera de estos sirve como ayudante</b> (o mézclalos): no cambia el plan, la imagen es solo referencia. Si encuentras uno, aprovecha de atraparlo. Ordenados por generación. Clic para elegir cuál mostrar:</div><input type="text" id="donorfilter" placeholder="filtrar…" style="margin-bottom:6px"><div class="donor-list" id="donorbox">'+chips.join('')+'</div>';
+  out.innerHTML='<div class="egg-hi">🥚 <b>'+escText(es)+'</b> — grupo huevo: <b>'+groups.map(eggName).join(' + ')+'</b></div><div class="small" style="margin:7px 0"><b>Cualquiera de estos sirve como ayudante</b> si puede ser macho. Para especies sin género o exclusivamente macho, usa Ditto. Si encuentras uno, aprovecha de atraparlo. Ordenados por generación. Clic para elegir cuál mostrar:</div><input type="text" id="donorfilter" placeholder="filtrar…" style="margin-bottom:6px"><div class="donor-list" id="donorbox">'+chips.join('')+'</div>';
   document.getElementById('donorfilter').addEventListener('input',ev=>{const q=ev.target.value.toLowerCase();document.querySelectorAll('#donorbox .donor').forEach(el=>{el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';});});
- }catch(e){out.innerHTML='<div class="small">Sin conexión a PokéAPI; escribe las especies a mano.</div>';}}
-renderAll();loadSpecies();if(S.target)lookupEgg(S.target.trim().toLowerCase());if(S.donor&&!S.dsprite)fetchSprite(S.donor.trim().toLowerCase(),'D');
+ }catch(e){
+  if(req!==speciesReq.T)return;
+  targetData={name,error:true};out.innerHTML='<div class="small">No pude comprobar la especie con PokéAPI. Revisa tu conexión e inténtalo otra vez.</div>';showCompatibility();renderPlan();
+ }
+}
+renderAll();loadSpecies();if(S.target)lookupEgg(S.target.trim().toLowerCase());if(S.donor)fetchSprite(S.donor.trim().toLowerCase(),'D');else showCompatibility();
 </script></body></html>

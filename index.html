@@ -107,18 +107,20 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
 .ftag.lock{color:#566;background:#eef2f5;border-color:#cdd7de}
 .egg-hi{font-size:15px;color:#123;background:#fff2c2;border:2px solid #e0b84a;border-radius:12px;padding:9px 12px;font-weight:600;box-shadow:0 2px 0 rgba(0,0,0,.08)}
 .donor-list{max-height:170px;overflow:auto;background:#fff;border:2px solid #cfe3f0;border-radius:8px;padding:6px}
-.donor{display:inline-flex;align-items:center;gap:5px;background:var(--row2);border:2px solid #a9d3ea;border-radius:6px;padding:4px 9px;margin:3px;font-size:13px;cursor:pointer;flex-wrap:wrap}
+.donor{display:inline-flex;align-items:center;gap:5px;background:var(--row2);border:2px solid #a9d3ea;border-radius:6px;padding:4px 9px;margin:3px;font-size:13px;cursor:pointer}
 .donor:hover{filter:brightness(.96)}.donor.pin{background:#fff2c2;border-color:#e0b84a}
-.egg-guide{margin:7px 0;padding:8px 10px;background:#f4f9fd;border:2px solid #cfe3f0;border-radius:9px;color:#29475c;font-size:12.5px;line-height:1.45}
-.egg-legend{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
-.egg-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:10.5px;font-weight:800;border:2px solid transparent;line-height:1.1}
-.egg-badge.egg-a{color:#0d527a;background:#d9f0ff;border-color:#62acd3}
-.egg-badge.egg-b{color:#74345f;background:#f9def1;border-color:#cf78ad}
-.egg-badge.egg-all{color:#755400;background:#fff0b8;border-color:#d4a622}
-.donor.egg-a{background:#edf8ff;border-color:#7dbbdc}
-.donor.egg-b{background:#fff0fa;border-color:#d58bb9}
-.donor.egg-ab{background:linear-gradient(135deg,#edf8ff 0 48%,#fff0fa 52% 100%);border-color:#9d7fb9}
-.donor-name{font-weight:600}
+.donor.egg-a{background:#edf8ff;border-color:#62acd3}
+.donor.egg-b{background:#fff0fa;border-color:#cf78ad}
+.donor.egg-ab{background:linear-gradient(135deg,#d9f0ff 0 48%,#f9def1 52% 100%);border-color:#9d7fb9}
+.donor-name{font-weight:500}
+.egg-key{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:6px 2px 0;padding:6px 8px;background:#f4f9fd;border:1px solid #cfe3f0;border-radius:7px;color:#456;font-size:11.5px}
+.egg-key-item{display:inline-flex;align-items:center;gap:4px;font-weight:700}
+.egg-swatch{display:inline-block;width:16px;height:12px;border:2px solid;border-radius:4px}
+.egg-swatch.egg-a{background:#edf8ff;border-color:#62acd3}
+.egg-swatch.egg-b{background:#fff0fa;border-color:#cf78ad}
+.egg-swatch.egg-ab{background:linear-gradient(135deg,#d9f0ff 0 48%,#f9def1 52% 100%);border-color:#9d7fb9}
+.egg-swatch.egg-all{background:#fff2c2;border-color:#e0b84a}
+.egg-key-note{flex-basis:100%;font-size:11px;line-height:1.35;color:#567}
 .specbox{display:flex;align-items:center;gap:8px;background:var(--row);border:2px solid #a9d3ea;border-radius:8px;padding:6px;transition:border-color .18s,background .18s,box-shadow .18s}
 .specbox.compat-good{border-color:#39a85a;background:#effbf2;box-shadow:0 0 0 2px rgba(57,168,90,.14)}
 .specbox.compat-bad{border-color:#dc3b35;background:#fff0ef;box-shadow:0 0 0 2px rgba(220,59,53,.17)}
@@ -595,11 +597,11 @@ async function lookupEgg(name){
    }catch(e){}
   }
   members.delete(name);const list=[...members.entries()].sort((a,b)=>a[1].id-b[1].id);
-  const groupBadge=g=>'<span class="egg-badge '+(groups.indexOf(g)===1?'egg-b':'egg-a')+'">'+escText(eggName(g))+'</span>';
-  const donorChip=([m,info])=>{const own=info.groups.filter(g=>groups.includes(g)),cls=own.length>1?'egg-ab':(groups.indexOf(own[0])===1?'egg-b':'egg-a');return '<span class="donor '+cls+'" data-donor="'+m+'" title="'+escText(pretty(m)+' · '+own.map(eggName).join(' + '))+'"><span class="donor-name">'+pretty(m)+'</span>'+own.map(groupBadge).join('')+'</span>';};
-  const chips=['<span class="donor pin" data-donor="ditto" title="Compatible con todos los grupos huevo"><span style="font-size:16px">⭐</span><span class="donor-name">Ditto</span><span class="egg-badge egg-all">Universal</span></span>'].concat(list.map(donorChip));
-  const legend='<div class="egg-guide"><b>🎨 Cómo combinar ayudantes:</b><div class="egg-legend">'+groups.map(groupBadge).join('')+'<span class="egg-badge egg-all">Universal</span></div>'+(groups.length>1?'Dos ayudantes pueden cruzarse si comparten <b>al menos una etiqueta del mismo color</b>. Los que muestran las dos etiquetas pertenecen a ambos grupos y pueden servir como puente.':'Todos los ayudantes de esta lista comparten el grupo <b>'+escText(eggName(groups[0]))+'</b> y pueden combinarse entre sí si sus géneros son compatibles.')+' <b>Ditto</b> funciona con cualquiera.</div>';
-  out.innerHTML='<div class="egg-hi">🥚 <b>'+escText(es)+'</b> — grupo huevo: <b>'+groups.map(eggName).join(' + ')+'</b></div>'+legend+'<div class="small" style="margin:7px 0"><b>Cada Pokémon muestra el grupo al que pertenece.</b> Puede servir como ayudante si puede ser macho. Para especies sin género o exclusivamente macho, usa Ditto. Ordenados por generación. Clic para elegir cuál mostrar:</div><input type="text" id="donorfilter" placeholder="filtrar…" style="margin-bottom:6px"><div class="donor-list" id="donorbox">'+chips.join('')+'</div>';
+  const donorChip=([m,info])=>{const own=info.groups.filter(g=>groups.includes(g)),cls=own.length>1?'egg-ab':(groups.indexOf(own[0])===1?'egg-b':'egg-a');return '<span class="donor '+cls+'" data-donor="'+m+'" title="'+escText(pretty(m)+' · '+own.map(eggName).join(' + '))+'"><span class="donor-name">'+pretty(m)+'</span></span>';};
+  const chips=['<span class="donor pin" data-donor="ditto" title="Compatible con todos los grupos huevo"><span style="font-size:16px">⭐</span><span class="donor-name">Ditto</span></span>'].concat(list.map(donorChip));
+  const keyItem=(label,cls)=>'<span class="egg-key-item"><span class="egg-swatch '+cls+'"></span>'+escText(label)+'</span>';
+  const legend='<div class="egg-key"><b>Colores:</b>'+groups.map((g,i)=>keyItem(eggName(g),i===1?'egg-b':'egg-a')).join('')+(groups.length>1?keyItem('Ambos grupos','egg-ab'):'')+keyItem('Ditto · universal','egg-all')+'<span class="egg-key-note">'+(groups.length>1?'Dos ayudantes pueden cruzarse si sus recuadros comparten un color. Los recuadros combinados sirven para cualquiera de los dos grupos.':'Todos los ayudantes mostrados comparten este grupo; solo debes respetar sus géneros.')+'</span></div>';
+  out.innerHTML='<div class="egg-hi">🥚 <b>'+escText(es)+'</b> — grupo huevo: <b>'+groups.map(eggName).join(' + ')+'</b></div><div class="small" style="margin:7px 0"><b>Cualquiera de estos puede servir como ayudante</b> si puede ser macho. Ordenados por generación. Clic para elegir cuál mostrar:</div><input type="text" id="donorfilter" placeholder="filtrar…" style="margin-bottom:6px"><div class="donor-list" id="donorbox">'+chips.join('')+'</div>'+legend;
   document.getElementById('donorfilter').addEventListener('input',ev=>{const q=ev.target.value.toLowerCase();document.querySelectorAll('#donorbox .donor').forEach(el=>{el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';});});
  }catch(e){
   if(req!==speciesReq.T)return;

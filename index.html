@@ -107,8 +107,18 @@ input[type=number],input[type=text]{font-family:inherit;font-size:15px;padding:8
 .ftag.lock{color:#566;background:#eef2f5;border-color:#cdd7de}
 .egg-hi{font-size:15px;color:#123;background:#fff2c2;border:2px solid #e0b84a;border-radius:12px;padding:9px 12px;font-weight:600;box-shadow:0 2px 0 rgba(0,0,0,.08)}
 .donor-list{max-height:170px;overflow:auto;background:#fff;border:2px solid #cfe3f0;border-radius:8px;padding:6px}
-.donor{display:inline-flex;align-items:center;gap:5px;background:var(--row2);border:2px solid #a9d3ea;border-radius:6px;padding:4px 9px;margin:3px;font-size:13px;cursor:pointer}
-.donor:hover{background:#bfe3f5}.donor.pin{background:#fff2c2;border-color:#e0b84a}
+.donor{display:inline-flex;align-items:center;gap:5px;background:var(--row2);border:2px solid #a9d3ea;border-radius:6px;padding:4px 9px;margin:3px;font-size:13px;cursor:pointer;flex-wrap:wrap}
+.donor:hover{filter:brightness(.96)}.donor.pin{background:#fff2c2;border-color:#e0b84a}
+.egg-guide{margin:7px 0;padding:8px 10px;background:#f4f9fd;border:2px solid #cfe3f0;border-radius:9px;color:#29475c;font-size:12.5px;line-height:1.45}
+.egg-legend{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
+.egg-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:10.5px;font-weight:800;border:2px solid transparent;line-height:1.1}
+.egg-badge.egg-a{color:#0d527a;background:#d9f0ff;border-color:#62acd3}
+.egg-badge.egg-b{color:#74345f;background:#f9def1;border-color:#cf78ad}
+.egg-badge.egg-all{color:#755400;background:#fff0b8;border-color:#d4a622}
+.donor.egg-a{background:#edf8ff;border-color:#7dbbdc}
+.donor.egg-b{background:#fff0fa;border-color:#d58bb9}
+.donor.egg-ab{background:linear-gradient(135deg,#edf8ff 0 48%,#fff0fa 52% 100%);border-color:#9d7fb9}
+.donor-name{font-weight:600}
 .specbox{display:flex;align-items:center;gap:8px;background:var(--row);border:2px solid #a9d3ea;border-radius:8px;padding:6px;transition:border-color .18s,background .18s,box-shadow .18s}
 .specbox.compat-good{border-color:#39a85a;background:#effbf2;box-shadow:0 0 0 2px rgba(57,168,90,.14)}
 .specbox.compat-bad{border-color:#dc3b35;background:#fff0ef;box-shadow:0 0 0 2px rgba(220,59,53,.17)}
@@ -577,12 +587,19 @@ async function lookupEgg(name){
    try{
     const gr=await fetch(API+'egg-group/'+g),gd=await gr.json();
     if(req!==speciesReq.T||normSpecies(S.target)!==name)return;
-    gd.pokemon_species.forEach(p=>{const mm=p.url.match(/\/(\d+)\/?$/);members.set(p.name,mm?+mm[1]:99999);});
+    gd.pokemon_species.forEach(p=>{
+     const mm=p.url.match(/\/(\d+)\/?$/),prev=members.get(p.name)||{id:mm?+mm[1]:99999,groups:[]};
+     if(!prev.groups.includes(g))prev.groups.push(g);
+     members.set(p.name,prev);
+    });
    }catch(e){}
   }
-  members.delete(name);const list=[...members.entries()].sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
-  const chips=['<span class="donor pin" data-donor="ditto"><span style="font-size:16px">⭐</span> Ditto</span>'].concat(list.map(m=>'<span class="donor" data-donor="'+m+'">'+pretty(m)+'</span>'));
-  out.innerHTML='<div class="egg-hi">🥚 <b>'+escText(es)+'</b> — grupo huevo: <b>'+groups.map(eggName).join(' + ')+'</b></div><div class="small" style="margin:7px 0"><b>Cualquiera de estos sirve como ayudante</b> si puede ser macho. Para especies sin género o exclusivamente macho, usa Ditto. Si encuentras uno, aprovecha de atraparlo. Ordenados por generación. Clic para elegir cuál mostrar:</div><input type="text" id="donorfilter" placeholder="filtrar…" style="margin-bottom:6px"><div class="donor-list" id="donorbox">'+chips.join('')+'</div>';
+  members.delete(name);const list=[...members.entries()].sort((a,b)=>a[1].id-b[1].id);
+  const groupBadge=g=>'<span class="egg-badge '+(groups.indexOf(g)===1?'egg-b':'egg-a')+'">'+escText(eggName(g))+'</span>';
+  const donorChip=([m,info])=>{const own=info.groups.filter(g=>groups.includes(g)),cls=own.length>1?'egg-ab':(groups.indexOf(own[0])===1?'egg-b':'egg-a');return '<span class="donor '+cls+'" data-donor="'+m+'" title="'+escText(pretty(m)+' · '+own.map(eggName).join(' + '))+'"><span class="donor-name">'+pretty(m)+'</span>'+own.map(groupBadge).join('')+'</span>';};
+  const chips=['<span class="donor pin" data-donor="ditto" title="Compatible con todos los grupos huevo"><span style="font-size:16px">⭐</span><span class="donor-name">Ditto</span><span class="egg-badge egg-all">Universal</span></span>'].concat(list.map(donorChip));
+  const legend='<div class="egg-guide"><b>🎨 Cómo combinar ayudantes:</b><div class="egg-legend">'+groups.map(groupBadge).join('')+'<span class="egg-badge egg-all">Universal</span></div>'+(groups.length>1?'Dos ayudantes pueden cruzarse si comparten <b>al menos una etiqueta del mismo color</b>. Los que muestran las dos etiquetas pertenecen a ambos grupos y pueden servir como puente.':'Todos los ayudantes de esta lista comparten el grupo <b>'+escText(eggName(groups[0]))+'</b> y pueden combinarse entre sí si sus géneros son compatibles.')+' <b>Ditto</b> funciona con cualquiera.</div>';
+  out.innerHTML='<div class="egg-hi">🥚 <b>'+escText(es)+'</b> — grupo huevo: <b>'+groups.map(eggName).join(' + ')+'</b></div>'+legend+'<div class="small" style="margin:7px 0"><b>Cada Pokémon muestra el grupo al que pertenece.</b> Puede servir como ayudante si puede ser macho. Para especies sin género o exclusivamente macho, usa Ditto. Ordenados por generación. Clic para elegir cuál mostrar:</div><input type="text" id="donorfilter" placeholder="filtrar…" style="margin-bottom:6px"><div class="donor-list" id="donorbox">'+chips.join('')+'</div>';
   document.getElementById('donorfilter').addEventListener('input',ev=>{const q=ev.target.value.toLowerCase();document.querySelectorAll('#donorbox .donor').forEach(el=>{el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';});});
  }catch(e){
   if(req!==speciesReq.T)return;
